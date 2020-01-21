@@ -1,0 +1,67 @@
+#########################################
+### Systems Factorial Technology in R ###
+#########################################
+
+     ### Houpt et al. (2013) ###
+
+###########################################
+# Survivor and Mean Interaction Contrasts #
+###########################################
+
+# Simulate single channel response times
+T1.h <- rweibull(300, shape=2, scale=400)
+T1.l <- rweibull(300, shape=2, scale=800)
+T2.h <- rweibull(300, shape=2, scale=400)
+T2.l <- rweibull(300, shape=2, scale=800)
+
+# Combine into "observed" response times
+# assuming a Serial-AND model
+hh <- T1.h + T2.h
+hl <- T1.h + T2.l
+lh <- T1.l + T2.h
+ll <- T1.l + T2.l
+# Run the SIC analysis
+SerialAND <- sic(hh,hl,lh,ll)
+SerialAND$SIC
+
+SerialAND$Dominance
+SerialAND$positive
+SerialAND$negative
+SerialAND$MIC
+
+plot(SerialAND$SIC, do.p=FALSE)
+
+########################
+# Capacity coefficient #
+########################
+
+#OR-coefficient
+
+# Generate single source response times
+rate1 <- 1/800
+rate2 <- 1/600
+pa <- rweibull(100, shape=2,
+                 scale=1/rate1)
+ap <- rweibull(100, shape=2,
+                 scale=1/rate2)
+
+# Simulate a limited capacity
+# Parallel-OR model
+# Limited capacity means slower
+# processing when there are multiple
+# sources, so we use .5 times the
+# original rate.
+pp.1 <- rweibull(100, shape=2,
+                   scale=1/(.5*rate1))
+pp.2 <- rweibull(100, shape=2,
+                   scale=1/(.5*rate2))
+
+pp <- pmin( pp.1, pp.2 )
+
+# Run the capacity analysis
+cap <- capacity.or(list(pp, pa, ap))
+cap$Ctest
+
+plot(cap$Ct, xlim=c(0,2000), ylim=c(0,2))
+
+#AND-coefficient
