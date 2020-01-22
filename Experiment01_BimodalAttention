@@ -1,22 +1,90 @@
 ###############################################
-### Draft Analysis Plan PSYP01 Experiment 1 ###
+### Draft Analysis Plan PSYP:01 Experiment 1 ###
 ###############################################
 
-#########################################
-### Systems Factorial Technology in R ###
-#########################################
+# Set up workspace
+setwd("C:/ExcercisesforR")
+rm(list=ls())
 
-    ### Houpt et al. (2013) ###
+#Packages
+library(ggplot2)
+library(retimes)
+library(tidyverse)
+library(BayesFactor)
+library(sft)
+
+####################
+# Simulate Dataset #
+####################
+
+#Set trials/subject and units random draws from exgauss
+
+n            <- 12
+trials_per_n <- 180
+trials       <- trials_per_n * n
+
+
+#soft
+S <- rexgauss(trials, mu = 430, sigma=90, tau=200, positive = T)
+S <- S[S > 0]
+S <-  tapply(S, rep(seq_along(S), each = trials_per_n, length.out = length(S)), mean)
+
+#loud
+L <- rexgauss(trials, mu = 360, sigma=90, tau=200, positive = T)
+L <- L[L > 0]
+L <- tapply(L, rep(seq_along(L), each = trials_per_n, length.out = length(L)), mean)
+
+#dim
+D <- rexgauss(trials, mu = 480, sigma=90, tau=200, positive = T)
+D <- D[D > 0]
+D <- tapply(D, rep(seq_along(D), each = trials_per_n, length.out = length(D)), mean)
+
+#bright
+B <- rexgauss(trials, mu = 420, sigma=90, tau=200, positive = T)
+B <- B[B > 0]
+B <- tapply(B, rep(seq_along(B), each = trials_per_n, length.out = length(B)), mean)
+
+#soft + dim
+SD <- rexgauss(trials, mu = 400, sigma=90, tau=200, positive = T)
+SD <- SD[SD > 0]
+SD <- tapply(SD, rep(seq_along(SD), each = trials_per_n, length.out = length(SD)), mean)
+
+#soft + bright
+SB <- rexgauss(trials, mu = 360, sigma=90, tau=200, positive = T)
+SB <- SB[SB > 0]
+SB <- tapply(SB, rep(seq_along(SB), each = trials_per_n, length.out = length(SB)), mean)
+
+#dim + loud
+DL <- rexgauss(trials, mu = 350, sigma=90, tau=200, positive = T)
+DL <- DL[DL > 0]
+DL <- tapply(DL, rep(seq_along(DL), each = trials_per_n, length.out = length(DL)), mean)
+
+#loud + bright
+LB <- rexgauss(trials, mu = 320, sigma=90, tau=200, positive = T)
+LB <- LB[SD > 0]
+LB <- tapply(LB, rep(seq_along(LB), each = trials_per_n, length.out = length(LB)), mean)
+
+
+#Create dataframe
+data = as.data.frame(c(S, L, D, B, SD, LB, DL, SB))
+energy = c(rep("soft", n), rep("loud", n), rep("dim", n), rep("bright", n),
+           rep("soft", n), rep("loud", n), rep("dim", n), rep("bright", n))
+redundancy = c(rep("unimodal", n*4), rep("redundant", n*4))
+rt.data = cbind(data, energy, redundancy)
+names(rt.data) = c("reaction_time", "stimulus", "redundancy")
 
 ###########################################
 # Survivor and Mean Interaction Contrasts #
 ###########################################
 
+#Mean and Survivor Contrasts + Capacity Analysis as devised by 'SFT in R' (Houpt et al.2013)
+#http://www.indiana.edu/~psymodel/papers/HouBla13.pdf
+
 # Simulate single channel response times
-T1.h <- rweibull(300, shape=2, scale=400)
-T1.l <- rweibull(300, shape=2, scale=800)
-T2.h <- rweibull(300, shape=2, scale=400)
-T2.l <- rweibull(300, shape=2, scale=800)
+T1.h <- B
+T1.l <- D
+T2.h <- L
+T2.l <- S
 
 # Combine into "observed" response times
 # assuming a Serial-AND model
@@ -26,10 +94,13 @@ lh <- T1.l + T2.h
 ll <- T1.l + T2.l
 # Run the SIC analysis
 SerialAND <- sic(hh,hl,lh,ll)
+
 SerialAND$SIC
 
 SerialAND$Dominance
+
 SerialAND$positive
+
 SerialAND$negative
 SerialAND$MIC
 
@@ -74,18 +145,20 @@ plot(cap$Ct, xlim=c(0,2000), ylim=c(0,2))
 ### Race Model Inequality ###
 #############################
 
-#Testing the race model inequality in R 
-#https://stats.stackexchange.com/questions/48581/testing-the-race-model-inequality-in-r
+# Race Model Inequality as devised by Ulrich et al. (2007) 
+# https://link.springer.com/article/10.3758/BF03193160?LI=true
 
-#example reaction times for single hypothetical participants for 3 experimental  conditions
-#this is the same dat set as one used by Urlich et al 2007
-cx <- c(244, 249, 257, 260, 264, 268, 271, 274, 277, 291)
-cy <- c(245, 246, 248, 250, 251, 252, 253, 254, 255, 259, 263, 265, 279, 282, 284, 319)
-cz <- c(234, 238, 240, 240, 243, 243, 245, 251, 254, 256, 259, 270, 280)
+# RMI algorithm kindly translated from MatLab to R by Y. Lin & L. Piwek via StackExchange. 
+# https://stats.stackexchange.com/questions/48581/testing-the-race-model-inequality-in-r
 
-#here I calculate quantiles corresponding to the given probabilities
+# cx=channel 1, cy=channel 2, cz=redundant 
+cx <- S
+cy <- D
+cz <- SD
+
+#calculate quantiles corresponding to the given probabilities
 #I use the default quantile algorithm (type 7 see R manual for 'quantile')
-#it seems right, but I'm not 100% sure
+
 psq <- seq(0,1,0.1)
 gx <- quantile(cx, probs=psq, names=F)
 gy <- quantile(cy, probs=psq, names=F)
@@ -243,9 +316,10 @@ gdf <- data.frame(RT =c(xp,yp,zp,bp), Probability =rep(psq, 4),
 panelf <- ggplot(gdf, aes(x = RT, y = Probability, group=Condition,
                           colour=Condition, shape=Condition)) + 
   geom_point() + geom_line() 
-panelf + coord_cartesian(xlim = c(230, 330), ylim=c(-.01,1.01)) +
+panelf + coord_cartesian(xlim = c(500, 750), ylim=c(-.01,1.01)) +
   theme(legend.position= c(.85, .20),  
         legend.title = element_text(size=12),
         legend.text = element_text(size=12))
 zp <- GetPercentile(psq, gz, tmax);
 bp <- GetPercentile(psq, b, tmax);
+
