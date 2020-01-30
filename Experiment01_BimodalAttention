@@ -5,7 +5,6 @@
 # Set up workspace
 setwd("C:/R.working.directory/")
 rm(list=ls())
-bugsdir <- "C:/WinBUGS14" # Download WinBUGS from https://www.mrc-bsu.cam.ac.uk/software/bugs/
 
 #Packages
 library(ggplot2)
