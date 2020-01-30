@@ -41,11 +41,11 @@ response_simulation = function(
   return(data)
 }
 
-#set number of trials per condition
 
+#set number of trials per condition
 tpc <- 40 
 
-#Simulate some data
+#Simulate data
 
 #Soft
 S <-  response_simulation(trials = tpc,
@@ -155,7 +155,7 @@ y <- auditory_gain_contrast
 y <- y/sd(y)
 n <- length(y)
 
-# Specify models
+#Specify models
 stancodeH0 <- '
 data {
   int<lower=1> n; // number of observations
@@ -186,11 +186,11 @@ model {
 }
 '
 
-# Compile models
+#Compile models
 stanmodelH0 <- stan_model(model_code = stancodeH0, model_name="stanmodel")
 stanmodelH1 <- stan_model(model_code = stancodeH1, model_name="stanmodel")
 
-# Fit models
+#Fit models
 stanfitH0 <- sampling(stanmodelH0, data = list(y = y, n = n),
                       iter = 10000, warmup = 1000, chains = 3, cores = 1,
                       control = list(adapt_delta = .99))
@@ -199,7 +199,7 @@ stanfitH1 <- sampling(stanmodelH1, data = list(y = y, n = n, r = 1/sqrt(2)),
                       control = list(adapt_delta = .99))
 
 
-# Compute log marginal likelihoods
+#Compute log marginal likelihoods
 H0 <- bridge_sampler(stanfitH0, silent = TRUE)
 H1 <- bridge_sampler(stanfitH1, silent = TRUE)
 
@@ -220,22 +220,22 @@ print(BF10)
 # Survivor and Mean Interaction Contrasts #
 ###########################################
 
-# Mean and Survivor Function Contrasts + Capacity Analysis as devised by Houpt et al. (2013)
-# http://www.indiana.edu/~psymodel/papers/HouBla13.pdf
+#Mean and Survivor Function Contrasts + Capacity Analysis as devised by Houpt et al. (2013)
+#http://www.indiana.edu/~psymodel/papers/HouBla13.pdf
 
-# Targets 1+2 (high/low saliency) for UCIP testing
+#Targets 1+2 (high/low saliency) for UCIP testing
 T1.h <- B[,1]
 T1.l <- D[,1]
 T2.h <- L[,1]
 T2.l <- S[,1]
 
-# Optional specification of UCIP (Unlimited Capacity Independent Processing) model
+#Optional specification of UCIP (Unlimited Capacity Independent Processing) model
 hh <- T1.h + T2.h
 hl <- T1.h + T2.l
 lh <- T1.l + T2.h
 ll <- T1.l + T2.l
 
-# Run the SIC analysis
+#Run the SIC analysis
 SerialAND <- sic(hh,hl,lh,ll)
 SerialAND$SIC
 SerialAND$Dominance
@@ -244,13 +244,13 @@ SerialAND$negative
 SerialAND$MIC
 plot(SerialAND$SIC, do.p=FALSE)
 
-## Enter actual data
+#Enter actual data
 hh <- LB[,1]
 hl <- LD[,1]
 lh <- SB[,1]
 ll <- SD[,1]
 
-# Run the SIC analysis
+#Run the SIC analysis
 SerialAND <- sic(hh,hl,lh,ll)
 SerialAND$SIC
 SerialAND$Dominance
@@ -263,32 +263,31 @@ plot(SerialAND$SIC, do.p=FALSE)
 # Capacity coefficient #
 ########################
 
-# OR-coefficient (performance on trials with multiple targets as compared to UCIP(OR) prediction
-
-# Input single source response times
+#OR-coefficient (performance on trials with multiple targets as compared to UCIP(OR) prediction
+#Input single source response times
 pa <- L[,1]
 ap <- B[,1]
 
-# Input multiple source response time
+#Input multiple source response time
 pp <- LB[,1]
 
-# Run the capacity analysis
+#Run the capacity analysis
 cap <- capacity.or(list(pp, pa, ap))
 cap$Ctest
 plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacity Coefficient")
 
 #AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
 
-# Input single source response times
+#Input single source response times
 pa <- L[,1]
 ap <- B[,1]
 
-# Input multiple source response time
+#Input multiple source response time
 pp <- LB[,1]
 
 cap <- capacity.and(list(pp, pa, ap), ratio=FALSE)
 
-# Run the capacity analysis
+#Run the capacity analysis
 cap <- capacity.or(list(pp, pa, ap))
 cap$Ctest
 plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacity Coefficient")
@@ -297,11 +296,11 @@ plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacit
 ### Race Model Inequality ###
 #############################
 
-# Race Model Inequality for RT distributions as devised by Ulrich et al. (2007) 
-# https://link.springer.com/article/10.3758/BF03193160?LI=true
+#Race Model Inequality for RT distributions as devised by Ulrich et al. (2007) 
+#https://link.springer.com/article/10.3758/BF03193160?LI=true
 
-# RMI algorithm kindly translated from MatLab to R by Y. Lin & L. Piwek via StackExchange. 
-# https://stats.stackexchange.com/questions/48581/testing-the-race-model-inequality-in-r
+#RMI algorithm kindly translated from MatLab to R by Y. Lin & L. Piwek via StackExchange. 
+#https://stats.stackexchange.com/questions/48581/testing-the-race-model-inequality-in-r
 
 # cx=channel 1, cy=channel 2, cz=redundant trials
 cx <- S[,1]
@@ -478,3 +477,5 @@ bp <- GetPercentile(psq, b, tmax);
 #############################
 ### Race Model Inequality ###
 #############################
+
+#need to tweak code so that it is applicable to p(F[redundant] > f) > p(F[auditory] > f) + p(F[visual] > f)
