@@ -1,5 +1,5 @@
 ################################################
-### Analysis Code Draft PSYP:01 Experiment 1 ###
+### Draft Analysis Code PSYP:01 Experiment 1 ###
 ################################################
 
 #Set up workspace
@@ -42,10 +42,8 @@ response_simulation = function(
 }
 
 
-#set number of trials per condition
+#Set number of trials per condition and simulate data
 tpc <- 40 
-
-#Simulate data
 
 #Soft
 S <-  response_simulation(trials = tpc,
@@ -477,5 +475,3 @@ bp <- GetPercentile(psq, b, tmax);
 #############################
 ### Race Model Inequality ###
 #############################
-
-#need to tweak code so that it is applicable to p(F[redundant] > f) > p(F[auditory] > f) + p(F[visual] > f)
