@@ -1,27 +1,23 @@
-###############################################
-### Draft Analysis Plan PSYP:01 Experiment 1 ###
-###############################################
+################################################
+### Draft Analysis Code PSYP:01 Experiment 1 ###
+################################################
 
-# Set up workspace
+#Set up workspace
 setwd("C:/R.working.directory/")
 rm(list=ls())
 
 #Packages
 library(ggplot2)
-library(retimes)
-library(tidyverse)
 library(BayesFactor)
 library(sft)
 library(rstan)
 library(bridgesampling)
 
-
-
 ####################
 # Simulate Dataset #
 ####################
 
-# Create simulation function for correlated RT and RF data
+#Create simulation function for correlated RT and RF data
 
 response_simulation = function(
   trials,
@@ -45,11 +41,13 @@ response_simulation = function(
   return(data)
 }
 
-# Create a dataset
+#set number of trials per condition
 
-tpc <- 40 # set number of trials per condition
+tpc <- 40 
 
-# Soft
+#Simulate some data
+
+#Soft
 S <-  response_simulation(trials = tpc,
                           mean_RT = 430,
                           mean_RF = 15,
@@ -57,57 +55,62 @@ S <-  response_simulation(trials = tpc,
                           sd_RF = 2,
                           r = -0.3)
 
-# Loud
+#Loud
 L <-  response_simulation(trials = tpc,
                           mean_RT = 360,
                           mean_RF = 16,
                           sd_RT = 90,
                           sd_RF = 2,
                           r = -0.3)
-# Dim
+#Dim
 D <-  response_simulation(trials = tpc,
                           mean_RT = 480,
                           mean_RF = 15,
                           sd_RT = 90,
                           sd_RF = 2,
                           r = -0.3)
-# Bright
+#Bright
 B <-  response_simulation(trials = tpc,
                           mean_RT = 420,
                           mean_RF = 15,
                           sd_RT = 90,
                           sd_RF = 2,
                           r = -0.3)
-# Soft + Dim
+#Soft + Dim
 SD <-  response_simulation(trials = tpc,
-                          mean_RT = 400,
-                          mean_RF = 15,
-                          sd_RT = 90,
-                          sd_RF = 2,
-                          r = -0.3)
-# Soft + Bright
+                           mean_RT = 400,
+                           mean_RF = 15,
+                           sd_RT = 90,
+                           sd_RF = 2,
+                           r = -0.3)
+#Soft + Bright
 SB <-  response_simulation(trials = tpc,
-                          mean_RT = 360,
-                          mean_RF = 15,
-                          sd_RT = 90,
-                          sd_RF = 2,
-                          r = -0.3)
-# Loud + Dim
+                           mean_RT = 360,
+                           mean_RF = 15,
+                           sd_RT = 90,
+                           sd_RF = 2,
+                           r = -0.3)
+#Loud + Dim
 LD <-  response_simulation(trials = tpc,
-                          mean_RT = 350,
-                          mean_RF = 15,
-                          sd_RT = 90,
-                          sd_RF = 2,
-                          r = -0.3)
-# Loud + Bright
+                           mean_RT = 350,
+                           mean_RF = 15,
+                           sd_RT = 90,
+                           sd_RF = 2,
+                           r = -0.3)
+#Loud + Bright
 LB <-  response_simulation(trials = tpc,
-                          mean_RT = 320,
-                          mean_RF = 15,
-                          sd_RT = 90,
-                          sd_RF = 2,
-                          r = -0.3)
+                           mean_RT = 320,
+                           mean_RF = 15,
+                           sd_RT = 90,
+                           sd_RF = 2,
+                           r = -0.3)
 
-# Create a separate RT dataset for ANOVA
+
+########################
+# Analysis of Variance #
+########################
+
+#Create a separate RT dataset for ANOVA
 data = as.data.frame(c(S[,1], L[,1], D[,1], B[,1], SD[,1], LD[,1], SB[,1], LB[,1]))
 energy = c(rep("soft", tpc), rep("loud", tpc), rep("dim", tpc), rep("bright", tpc),
            rep("soft_dim", tpc), rep("loud_dim", tpc), rep("soft_bright", tpc), rep("loud_bright", tpc))
@@ -115,24 +118,19 @@ redundancy = c(rep("unimodal", tpc*4), rep("redundant", tpc*4))
 RT.data = cbind(data, energy, redundancy)
 names(RT.data) = c("reaction_time", "stimulus", "redundancy")
 
-# Create a separate RF dataset for ANOVA
+#Compute Bayes Factors for RT data
+bayes_factor <- anovaBF(reaction_time ~ stimulus*redundancy, data=RT.data)
+
+print(bayes_factor)
+bayes_factor@bayesFactor$bf
+
+#Create a separate RF dataset for ANOVA
 data = as.data.frame(c(S[,2], L[,2], D[,2], B[,2], SD[,2], LD[,2], SB[,2], LB[,2]))
 energy = c(rep("soft", tpc), rep("loud", tpc), rep("dim", tpc), rep("bright", tpc),
            rep("soft_dim", tpc), rep("loud_dim", tpc), rep("soft_bright", tpc), rep("loud_bright", tpc))
 redundancy = c(rep("unimodal", tpc*4), rep("redundant", tpc*4))
 RF.data = cbind(data, energy, redundancy)
 names(RF.data) = c("response_force", "stimulus", "redundancy")
-
-
-########################
-# Analysis of Variance #
-########################
-
-#Compute Bayes Factors for RT data
-bayes_factor <- anovaBF(reaction_time ~ stimulus*redundancy, data=RT.data)
-
-print(bayes_factor)
-bayes_factor@bayesFactor$bf
 
 #Compute Bayes Factors for RF data
 bayes_factor <- anovaBF(response_force ~ stimulus*redundancy, data=RF.data)
@@ -146,12 +144,13 @@ bayes_factor@bayesFactor$bf
 
 set.seed(12345)
 
-# Create difference scores for the redundancy gain contrast
+#Create difference scores for the redundancy gain contrast
 auditory_gain_contrast <- ((S[,1]-SD[,1]) - (L[,1]-LB[,1]))  
 visual_gain_contrast   <- ((B[,1]-LB[,1]) - (D[,1]-SD[,1]))   
 
-# The inverse effectiveness theorem of multisensory integration predicts these difference scores to be positive
+#The principle of inverse effectiveness of multisensory integration predicts these contrast to be positive
 
+#Standardize data
 y <- auditory_gain_contrast
 y <- y/sd(y)
 n <- length(y)
@@ -199,6 +198,7 @@ stanfitH1 <- sampling(stanmodelH1, data = list(y = y, n = n, r = 1/sqrt(2)),
                       iter = 20000, warmup = 1000, chains = 4, cores = 1,
                       control = list(adapt_delta = .99))
 
+
 # Compute log marginal likelihoods
 H0 <- bridge_sampler(stanfitH0, silent = TRUE)
 H1 <- bridge_sampler(stanfitH1, silent = TRUE)
@@ -220,7 +220,7 @@ print(BF10)
 # Survivor and Mean Interaction Contrasts #
 ###########################################
 
-# Mean and Survivor Functions Contrasts + Capacity Analysis as devised by Houpt et al. (2013)
+# Mean and Survivor Function Contrasts + Capacity Analysis as devised by Houpt et al. (2013)
 # http://www.indiana.edu/~psymodel/papers/HouBla13.pdf
 
 # Targets 1+2 (high/low saliency) for UCIP testing
@@ -229,7 +229,7 @@ T1.l <- D[,1]
 T2.h <- L[,1]
 T2.l <- S[,1]
 
-# Combine into "observed" response times with UCIP (Unlimited Capacity Independent Processing) model assumptions
+# Optional specification of UCIP (Unlimited Capacity Independent Processing) model
 hh <- T1.h + T2.h
 hl <- T1.h + T2.l
 lh <- T1.l + T2.h
@@ -245,7 +245,6 @@ SerialAND$MIC
 plot(SerialAND$SIC, do.p=FALSE)
 
 ## Enter actual data
-
 hh <- LB[,1]
 hl <- LD[,1]
 lh <- SB[,1]
@@ -267,12 +266,10 @@ plot(SerialAND$SIC, do.p=FALSE)
 # OR-coefficient (performance on trials with multiple targets as compared to UCIP(OR) prediction
 
 # Input single source response times
-
 pa <- L[,1]
 ap <- B[,1]
 
 # Input multiple source response time
-
 pp <- LB[,1]
 
 # Run the capacity analysis
@@ -280,7 +277,7 @@ cap <- capacity.or(list(pp, pa, ap))
 cap$Ctest
 plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacity Coefficient")
 
-#AND-coefficient (inverse CDF from trials with multiple targets as compared to UCIP(AND) prediction
+#AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
 
 # Input single source response times
 pa <- L[,1]
@@ -300,13 +297,13 @@ plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacit
 ### Race Model Inequality ###
 #############################
 
-# Race Model Inequality as devised by Ulrich et al. (2007) 
+# Race Model Inequality for RT distributions as devised by Ulrich et al. (2007) 
 # https://link.springer.com/article/10.3758/BF03193160?LI=true
 
 # RMI algorithm kindly translated from MatLab to R by Y. Lin & L. Piwek via StackExchange. 
 # https://stats.stackexchange.com/questions/48581/testing-the-race-model-inequality-in-r
 
-# cx=channel 1, cy=channel 2, cz=redundant 
+# cx=channel 1, cy=channel 2, cz=redundant trials
 cx <- S[,1]
 cy <- D[,1]
 cz <- SD[,1]
@@ -477,3 +474,7 @@ panelf + coord_cartesian(xlim = c(100, 750), ylim=c(-.01,1.01)) +
         legend.text = element_text(size=12))
 zp <- GetPercentile(psq, gz, tmax);
 bp <- GetPercentile(psq, b, tmax);
+
+#############################
+### Race Model Inequality ###
+#############################
