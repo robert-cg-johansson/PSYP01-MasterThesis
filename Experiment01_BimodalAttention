@@ -305,41 +305,9 @@ cx <- S[,1]
 cy <- D[,1]
 cz <- SD[,1]
 
-#calculate quantiles corresponding to the given probabilities
-#I use the default quantile algorithm (type 7 see R manual for 'quantile')
 
-psq <- seq(0,1,0.1)
-gx <- quantile(cx, probs=psq, names=F)
-gy <- quantile(cy, probs=psq, names=F)
-gz <- quantile(cz, probs=psq, names=F)
-
-#here I visualize the quantiles, looks more or less like in Ulrich et al 2007
-xyz <- data.frame(rt=c(gx,gy,gz), 
-                  perc=rep(psq,3), 
-                  cond=rep(c("gx(t)", "gy(t)","gz(t)"), each=length(psq)))
-require(lattice)
-xyplot(perc ~ rt, groups = cond, xyz, col=1, lty=3:1, type=c("g","l","p"), 
-       key=list(lines=list(lty=3:1), text=list(labels=levels(xyz$cond))))
-
-
-#Compute the bounding um 'b' from g(x) and g(y)
-b = gx + gy
-#but then when I visualize it, it's wrong:
-
-xyz <- data.frame(rt=c(gx,gy,gz,b), 
-                  perc=rep(psq,4), 
-                  cond=rep(c("gx(t)", "gy(t)","gz(t)","gx(t)+gy(t)"), each=length(psq)))
-
-xyplot(perc ~ rt, groups = cond, xyz, col=1, lty=4:1, type=c("g","l","p"), 
-       key=list(lines=list(lty=4:1), text=list(labels=levels(xyz$cond))))
-
-
-#############Alternative solution
-
-#Probspace function
+#Probspace function based on equation (3) in Ulrich, Miller and Schroter (2007)
 probSpace <- function(len){ 
-  # PROBSPACE Determine the interval of percentiles 
-  #   The function used equation (3) in Ulrich, Miller and Schroter (2007)
   P <- numeric(len);
   for(i in 1:len){
     P[i] <- (i - .5) / len;
@@ -442,7 +410,7 @@ GetPercentile <- function( P, G, tmax ){
 }
 
 
-##RMi
+##Compute and plot
 psq <- probSpace(10); psq
 
 dfx <- ties(cx)
@@ -472,6 +440,3 @@ panelf + coord_cartesian(xlim = c(100, 750), ylim=c(-.01,1.01)) +
 zp <- GetPercentile(psq, gz, tmax);
 bp <- GetPercentile(psq, b, tmax);
 
-#############################
-### Race Model Inequality ###
-#############################
