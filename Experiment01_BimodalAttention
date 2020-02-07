@@ -13,6 +13,7 @@ library(sft)
 library(rstan)
 library(bridgesampling)
 library(MASS)
+library(HDInterval)
 
 citation("MASS")
 
@@ -179,7 +180,7 @@ set.seed(12345)
 
 #Create difference scores for the redundancy gain contrast
 auditory_gain_contrast <- ((SD[,1]-S[,1]) - (LB[,1]-L[,1]))  
-visual_gain_contrast   <- ((SD[,1]-D[,1]) - (LB[,1]-L[,1]))   
+visual_gain_contrast   <- ((SD[,1]-D[,1]) - (LB[,1]-B[,1]))   
 #inverse effectiveness predicts these contrasts to be positive
 
 #Standardize data
@@ -189,6 +190,7 @@ y <- y/sd(y)
 n <- length(y)
 
 print(y)
+mean(y)
 
 
 stancodeHplus <- '
@@ -238,6 +240,7 @@ stanfitH0 <- sampling(stanmodelH0, data = list(y = y, n = n),
 
 H0 <- bridge_sampler(stanfitH0, silent = TRUE)
 Hplus <- bridge_sampler(stanfitHplus, silent = TRUE)
+stanfitHplusdelta
 
 print(Hplus)
 print(H0)
@@ -248,14 +251,20 @@ print(H0.error)
 Hplus.error <- error_measures(Hplus)$percentage
 print(Hplus.error)
 
-BFplus0 <- bf(Hplus, H0)
+BFplus0 <- bf(H0, Hplus)
 print(BFplus0)
 
-BFplus0.BayesFactor <- extractBF(ttestBF(y, nullInterval = c(0, Inf)), onlybf = TRUE)[1]
 
-print(BFplus0.BayesFactor)
+#Extract 90%HDI
+list_of_draws <- extract(stanfitHplus)
+HDI <- hdi(list_of_draws$delta, credMass=0.9)
 
+#Specify SESOI
+SESOI = 0.1
 
+#Perform equivalence test
+decision = if(SESOI < HDI["lower"]){"H1"} else if(SESOI > HDI["upper"]){"H0"} else {"inconclusive"}
+print(decision)
 
 ###########################################
 # Survivor and Mean Interaction Contrasts #
@@ -304,9 +313,9 @@ plot(SerialAND$SIC, do.p=FALSE)
 # Capacity coefficient #
 ########################
 
-###Soft and Dim signals
+### Soft and Dim signals ###
 
-###AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
+#AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
 
 #Input single source response times
 pa <- S[,1]
@@ -338,9 +347,9 @@ plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacit
 
 
 
-###Loud and Bright Signals
+### Loud and Bright Signals ###
 
-###AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
+#AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
 
 #Input single source response times
 pa <- L[,1]
