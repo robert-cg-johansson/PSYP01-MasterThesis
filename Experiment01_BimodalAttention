@@ -15,7 +15,6 @@ library(bridgesampling)
 library(MASS)
 library(HDInterval)
 
-citation("MASS")
 
 ####################
 # Simulate Dataset #
@@ -150,7 +149,7 @@ intensity = c(rep("weak", tpc), rep("strong", tpc), rep("weak", tpc), rep("stron
 RF.data.unimodal = cbind(data, signal, modality, intensity)
 names(RF.data.unimodal) = c("response_force", "signal", "modality", "intensity")
 
-#Compute Bayes Factors for unimodal RT data
+#Compute Bayes Factors for unimodal RF data
 bayes_factor <- anovaBF(response_force ~ modality*intensity, data=RF.data.unimodal)
 
 print(bayes_factor)
@@ -165,7 +164,7 @@ brightness= c(rep("dim", tpc*2), rep("bright", tpc*2))
 RT.data.bimodal = cbind(data, signal, loudness, brightness)
 names(RT.data.bimodal) = c("response_force","signal", "loudness", "brightness")
 
-#Compute Bayes Factors for bimodal RT data
+#Compute Bayes Factors for bimodal RF data
 bayes_factor <- anovaBF(response_force ~ loudness*brightness, data=RT.data.bimodal)
 
 print(bayes_factor)
