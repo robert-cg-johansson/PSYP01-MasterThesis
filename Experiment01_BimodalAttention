@@ -12,6 +12,9 @@ library(BayesFactor)
 library(sft)
 library(rstan)
 library(bridgesampling)
+library(MASS)
+
+citation("MASS")
 
 ####################
 # Simulate Dataset #
@@ -43,12 +46,12 @@ response_simulation = function(
 
 
 #Set number of trials per condition and simulate data
-tpc <- 40 
+tpc <- 50
 
 #Soft
 S <-  response_simulation(trials = tpc,
                           mean_RT = 430,
-                          mean_RF = 15,
+                          mean_RF = 16,
                           sd_RT = 90,
                           sd_RF = 2,
                           r = -0.3)
@@ -56,49 +59,49 @@ S <-  response_simulation(trials = tpc,
 #Loud
 L <-  response_simulation(trials = tpc,
                           mean_RT = 360,
-                          mean_RF = 16,
+                          mean_RF = 17,
                           sd_RT = 90,
                           sd_RF = 2,
                           r = -0.3)
 #Dim
 D <-  response_simulation(trials = tpc,
                           mean_RT = 480,
-                          mean_RF = 15,
+                          mean_RF = 15.5,
                           sd_RT = 90,
                           sd_RF = 2,
                           r = -0.3)
 #Bright
 B <-  response_simulation(trials = tpc,
                           mean_RT = 420,
-                          mean_RF = 15,
+                          mean_RF = 16.5,
                           sd_RT = 90,
                           sd_RF = 2,
                           r = -0.3)
 #Soft + Dim
 SD <-  response_simulation(trials = tpc,
-                           mean_RT = 400,
-                           mean_RF = 15,
+                           mean_RT = 390,
+                           mean_RF = 17,
                            sd_RT = 90,
                            sd_RF = 2,
                            r = -0.3)
 #Soft + Bright
 SB <-  response_simulation(trials = tpc,
                            mean_RT = 360,
-                           mean_RF = 15,
+                           mean_RF = 17.5,
                            sd_RT = 90,
                            sd_RF = 2,
                            r = -0.3)
 #Loud + Dim
 LD <-  response_simulation(trials = tpc,
                            mean_RT = 350,
-                           mean_RF = 15,
+                           mean_RF = 18,
                            sd_RT = 90,
                            sd_RF = 2,
                            r = -0.3)
 #Loud + Bright
 LB <-  response_simulation(trials = tpc,
                            mean_RT = 320,
-                           mean_RF = 15,
+                           mean_RF = 18.5,
                            sd_RT = 90,
                            sd_RF = 2,
                            r = -0.3)
@@ -108,33 +111,65 @@ LB <-  response_simulation(trials = tpc,
 # Analysis of Variance #
 ########################
 
-#Create a separate RT dataset for ANOVA
-data = as.data.frame(c(S[,1], L[,1], D[,1], B[,1], SD[,1], LD[,1], SB[,1], LB[,1]))
-energy = c(rep("soft", tpc), rep("loud", tpc), rep("dim", tpc), rep("bright", tpc),
-           rep("soft_dim", tpc), rep("loud_dim", tpc), rep("soft_bright", tpc), rep("loud_bright", tpc))
-redundancy = c(rep("unimodal", tpc*4), rep("redundant", tpc*4))
-RT.data = cbind(data, energy, redundancy)
-names(RT.data) = c("reaction_time", "stimulus", "redundancy")
+#Create a dataset for unimodal RT ANOVA
+data = as.data.frame(c(S[,1], L[,1], D[,1], B[,1]))
+signal = c(rep("soft", tpc), rep("loud", tpc), rep("dim", tpc), rep("bright", tpc))
+modality = c(rep("auditory", tpc*2), rep("visual", tpc*2))
+intensity = c(rep("weak", tpc), rep("strong", tpc), rep("weak", tpc), rep("strong", tpc))
+RT.data.unimodal = cbind(data, signal, modality, intensity)
+names(RT.data.unimodal) = c("reaction_time", "signal", "modality", "intensity")
 
-#Compute Bayes Factors for RT data
-bayes_factor <- anovaBF(reaction_time ~ stimulus*redundancy, data=RT.data)
+#Compute Bayes Factors for unimodal RT data
+bayes_factor <- anovaBF(reaction_time ~ modality*intensity, data=RT.data.unimodal)
+
+print(bayes_factor)
+bayes_factor@bayesFactor$bf
+
+
+#Create a dataset for bimodal RT ANOVA
+data = as.data.frame(c(SD[,1], LD[,1], SB[,1], LB[,1]))
+signal = c(rep("soft+dim", tpc), rep("loud+dim", tpc), rep("soft+bright", tpc), rep("loud+bright", tpc))
+loudness = c(rep("soft", tpc), rep("loud", tpc), rep("soft", tpc), rep("loud", tpc))
+brightness= c(rep("dim", tpc*2), rep("bright", tpc*2))
+RT.data.bimodal = cbind(data, signal, loudness, brightness)
+names(RT.data.bimodal) = c("reaction_time","signal", "loudness", "brightness")
+
+#Compute Bayes Factors for bimodal RT data
+bayes_factor <- anovaBF(reaction_time ~ loudness*brightness, data=RT.data.bimodal)
 
 print(bayes_factor)
 bayes_factor@bayesFactor$bf
 
-#Create a separate RF dataset for ANOVA
-data = as.data.frame(c(S[,2], L[,2], D[,2], B[,2], SD[,2], LD[,2], SB[,2], LB[,2]))
-energy = c(rep("soft", tpc), rep("loud", tpc), rep("dim", tpc), rep("bright", tpc),
-           rep("soft_dim", tpc), rep("loud_dim", tpc), rep("soft_bright", tpc), rep("loud_bright", tpc))
-redundancy = c(rep("unimodal", tpc*4), rep("redundant", tpc*4))
-RF.data = cbind(data, energy, redundancy)
-names(RF.data) = c("response_force", "stimulus", "redundancy")
 
-#Compute Bayes Factors for RF data
-bayes_factor <- anovaBF(response_force ~ stimulus*redundancy, data=RF.data)
+#Create a dataset for unimodal RF ANOVA
+data = as.data.frame(c(S[,2], L[,2], D[,2], B[,2]))
+signal = c(rep("soft", tpc), rep("loud", tpc), rep("dim", tpc), rep("bright", tpc))
+modality = c(rep("auditory", tpc*2), rep("visual", tpc*2))
+intensity = c(rep("weak", tpc), rep("strong", tpc), rep("weak", tpc), rep("strong", tpc))
+RF.data.unimodal = cbind(data, signal, modality, intensity)
+names(RF.data.unimodal) = c("response_force", "signal", "modality", "intensity")
+
+#Compute Bayes Factors for unimodal RT data
+bayes_factor <- anovaBF(response_force ~ modality*intensity, data=RF.data.unimodal)
 
 print(bayes_factor)
 bayes_factor@bayesFactor$bf
+
+
+#Create a dataset for bimodal RF ANOVA
+data = as.data.frame(c(SD[,2], LD[,2], SB[,2], LB[,2]))
+signal = c(rep("soft+dim", tpc), rep("loud+dim", tpc), rep("soft+bright", tpc), rep("loud+bright", tpc))
+loudness = c(rep("soft", tpc), rep("loud", tpc), rep("soft", tpc), rep("loud", tpc))
+brightness= c(rep("dim", tpc*2), rep("bright", tpc*2))
+RT.data.bimodal = cbind(data, signal, loudness, brightness)
+names(RT.data.bimodal) = c("response_force","signal", "loudness", "brightness")
+
+#Compute Bayes Factors for bimodal RT data
+bayes_factor <- anovaBF(response_force ~ loudness*brightness, data=RT.data.bimodal)
+
+print(bayes_factor)
+bayes_factor@bayesFactor$bf
+
 
 #################################
 # Inverse Effectiveness Theorem #
@@ -143,17 +178,35 @@ bayes_factor@bayesFactor$bf
 set.seed(12345)
 
 #Create difference scores for the redundancy gain contrast
-auditory_gain_contrast <- ((S[,1]-SD[,1]) - (L[,1]-LB[,1]))  
-visual_gain_contrast   <- ((B[,1]-LB[,1]) - (D[,1]-SD[,1]))   
-
-#The principle of inverse effectiveness of multisensory integration predicts these contrast to be positive
+auditory_gain_contrast <- ((SD[,1]-S[,1]) - (LB[,1]-L[,1]))  
+visual_gain_contrast   <- ((SD[,1]-D[,1]) - (LB[,1]-L[,1]))   
+#inverse effectiveness predicts these contrasts to be positive
 
 #Standardize data
-y <- auditory_gain_contrast
+y <- auditory_gain_contrast  #visual_gain_contrast can liekwise be entered here
+#y <- visual_gain_contrast
 y <- y/sd(y)
 n <- length(y)
 
-#Specify models
+print(y)
+
+
+stancodeHplus <- '
+data {
+  int<lower=1> n; // number of observations
+  vector[n] y; // observations
+  real<lower=0> r; // Cauchy prior scale
+}
+parameters {
+  real<lower=0> delta; // constrained to be positive
+  real<lower=0> sigma2;// variance parameter
+}
+model {
+  target += cauchy_lpdf(delta | 0, r) - cauchy_lccdf(0 | 0, r); // Cauchy prior on delta
+  target += log(1/sigma2); // Jeffreys prior on sigma2
+  target += normal_lpdf(y | delta*sqrt(sigma2), sqrt(sigma2));  // likelihood
+}
+'
 stancodeH0 <- '
 data {
   int<lower=1> n; // number of observations
@@ -167,51 +220,41 @@ model {
   target += normal_lpdf(y | 0, sqrt(sigma2)); // likelihood
 }
 '
-stancodeH1 <- '
-data {
-  int<lower=1> n; // number of observations
-  vector[n] y; // observations
-  real<lower=0> r; // Cauchy prior scale
-}
-parameters {
-  real delta;
-  real<lower=0> sigma2;// variance parameter
-}
-model {
-  target += cauchy_lpdf(delta | 0, r); // Cauchy prior on delta
-  target += log(1/sigma2); // Jeffreys prior on sigma2
-  target += normal_lpdf(y | delta*sqrt(sigma2), sqrt(sigma2));  // likelihood
-}
-'
 
-#Compile models
+
+# compile and fit model
+stanmodelHplus <- stan_model(model_code = stancodeHplus, model_name="stanmodel")
 stanmodelH0 <- stan_model(model_code = stancodeH0, model_name="stanmodel")
-stanmodelH1 <- stan_model(model_code = stancodeH1, model_name="stanmodel")
 
-#Fit models
+
+
+stanfitHplus <- sampling(stanmodelHplus, data = list(y = y, n = n, r = 1/sqrt(2)),
+                         iter = 10000, warmup = 1000, chains = 4,
+                         control = list(adapt_delta = .99))
+
 stanfitH0 <- sampling(stanmodelH0, data = list(y = y, n = n),
-                      iter = 10000, warmup = 1000, chains = 3, cores = 1,
-                      control = list(adapt_delta = .99))
-stanfitH1 <- sampling(stanmodelH1, data = list(y = y, n = n, r = 1/sqrt(2)),
-                      iter = 20000, warmup = 1000, chains = 4, cores = 1,
+                      iter = 10000, warmup = 1000, chains = 4, cores = 1,
                       control = list(adapt_delta = .99))
 
-
-#Compute log marginal likelihoods
 H0 <- bridge_sampler(stanfitH0, silent = TRUE)
-H1 <- bridge_sampler(stanfitH1, silent = TRUE)
+Hplus <- bridge_sampler(stanfitHplus, silent = TRUE)
 
+print(Hplus)
 print(H0)
-print(H1)
 
 H0.error <- error_measures(H0)$percentage
-H1.error <- error_measures(H1)$percentage
-
 print(H0.error)
-print(H1.error)
 
-BF10 <- bf(H1, H0)
-print(BF10)
+Hplus.error <- error_measures(Hplus)$percentage
+print(Hplus.error)
+
+BFplus0 <- bf(Hplus, H0)
+print(BFplus0)
+
+BFplus0.BayesFactor <- extractBF(ttestBF(y, nullInterval = c(0, Inf)), onlybf = TRUE)[1]
+
+print(BFplus0.BayesFactor)
+
 
 
 ###########################################
@@ -221,19 +264,19 @@ print(BF10)
 #Mean and Survivor Function Contrasts + Capacity Analysis as devised by Houpt et al. (2013)
 #http://www.indiana.edu/~psymodel/papers/HouBla13.pdf
 
-#Targets 1+2 (high/low saliency) for UCIP testing
+#Enter unimodal data for UCIP(AND) testing
 T1.h <- B[,1]
 T1.l <- D[,1]
 T2.h <- L[,1]
 T2.l <- S[,1]
 
-#Optional specification of UCIP (Unlimited Capacity Independent Processing) model
+#Summate RTs
 hh <- T1.h + T2.h
 hl <- T1.h + T2.l
 lh <- T1.l + T2.h
 ll <- T1.l + T2.l
 
-#Run the SIC analysis
+#Run the SIC analysis assuming UCIP(AND) architecture
 SerialAND <- sic(hh,hl,lh,ll)
 SerialAND$SIC
 SerialAND$Dominance
@@ -242,7 +285,7 @@ SerialAND$negative
 SerialAND$MIC
 plot(SerialAND$SIC, do.p=FALSE)
 
-#Enter actual data
+#Enter actual data for UCIP(OR) testing
 hh <- LB[,1]
 hl <- LD[,1]
 lh <- SB[,1]
@@ -261,20 +304,43 @@ plot(SerialAND$SIC, do.p=FALSE)
 # Capacity coefficient #
 ########################
 
-#OR-coefficient (performance on trials with multiple targets as compared to UCIP(OR) prediction
+###Soft and Dim signals
+
+###AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
+
 #Input single source response times
-pa <- L[,1]
-ap <- B[,1]
+pa <- S[,1]
+ap <- D[,1]
 
 #Input multiple source response time
-pp <- LB[,1]
+pp <- SD[,1]
+
+cap <- capacity.and(list(pp, pa, ap), ratio=FALSE)
+
+#Run the capacity analysis
+cap$Ctest
+plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacity Coefficient")
+
+
+###OR-coefficient (performance on trials with multiple targets as compared to UCIP(OR) prediction
+
+#Input single source response times
+pa <- S[,1]
+ap <- D[,1]
+
+#Input multiple source response time
+pp <- SD[,1]
 
 #Run the capacity analysis
 cap <- capacity.or(list(pp, pa, ap))
 cap$Ctest
 plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacity Coefficient")
 
-#AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
+
+
+###Loud and Bright Signals
+
+###AND-coefficient (performance on trials with multiple targets as compared to UCIP(AND) prediction)
 
 #Input single source response times
 pa <- L[,1]
@@ -284,6 +350,20 @@ ap <- B[,1]
 pp <- LB[,1]
 
 cap <- capacity.and(list(pp, pa, ap), ratio=FALSE)
+
+#Run the capacity analysis
+cap$Ctest
+plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacity Coefficient")
+
+
+###OR-coefficient (performance on trials with multiple targets as compared to UCIP(OR) prediction
+
+#Input single source response times
+pa <- L[,1]
+ap <- B[,1]
+
+#Input multiple source response time
+pp <- LB[,1]
 
 #Run the capacity analysis
 cap <- capacity.or(list(pp, pa, ap))
@@ -300,10 +380,7 @@ plot(cap$Ct, xlim=c(0,1000), ylim=c(0,2), ylab = "C(t)", xlab="t", main="Capacit
 #RMI algorithm kindly translated from MatLab to R by Y. Lin & L. Piwek via StackExchange. 
 #https://stats.stackexchange.com/questions/48581/testing-the-race-model-inequality-in-r
 
-# cx=channel 1, cy=channel 2, cz=redundant trials
-cx <- S[,1]
-cy <- D[,1]
-cz <- SD[,1]
+
 
 
 #Probspace function based on equation (3) in Ulrich, Miller and Schroter (2007)
@@ -411,6 +488,19 @@ GetPercentile <- function( P, G, tmax ){
 
 
 ##Compute and plot
+# cx=channel 1, cy=channel 2, cz=redundant trials
+
+#Soft and Dim signals
+cx <- S[,1]
+cy <- D[,1]
+cz <- SD[,1]
+
+
+#Loud and Bright signals
+cx <-L[,1]
+cy <- B[,1]
+cz <-LB[,1]
+
 psq <- probSpace(10); psq
 
 dfx <- ties(cx)
@@ -429,7 +519,7 @@ zp <- GetPercentile(psq, gz, tmax);
 bp <- GetPercentile(psq, b, tmax);
 
 gdf <- data.frame(RT =c(xp,yp,zp,bp), Probability =rep(psq, 4),
-                  Condition =rep(c("gx(t)", "gy(t)","gz(t)","gx(t)+gy(t)"), each=length(xp)))
+                  Condition =rep(c("Soft", "Dim","Soft+Dim","Bounding sum"), each=length(xp)))
 panelf <- ggplot(gdf, aes(x = RT, y = Probability, group=Condition,
                           colour=Condition, shape=Condition)) + 
   geom_point() + geom_line() 
@@ -440,3 +530,44 @@ panelf + coord_cartesian(xlim = c(100, 750), ylim=c(-.01,1.01)) +
 zp <- GetPercentile(psq, gz, tmax);
 bp <- GetPercentile(psq, b, tmax);
 
+#######################################
+### Race Model Inequality (RF Data) ###
+#######################################
+
+#The same functions defined for the RT RMI test can be used here
+cx <- S[,2]
+cy <- D[,2]
+cz <- SD[,2]
+
+cx <- L[,2]   #Strong signal energies can elso be entered here
+cy <- B[,2]
+cz <- LB[,2]
+   
+psq <- probSpace(10); psq
+
+dfx <- ties(cx)
+dfy <- ties(cy)
+dfz <- ties(cz)
+tmax <- max(cx,cy,cz)
+
+gx <- cdf.ulrich(data=dfx, maximum=tmax)
+gy <- cdf.ulrich(data=dfy, maximum=tmax)
+gz <- cdf.ulrich(data=dfz, maximum=tmax)
+
+b <- gx + gy
+xp <- GetPercentile(psq, gx, tmax)
+yp <- GetPercentile(psq, gy, tmax)
+zp <- GetPercentile(psq, gz, tmax);
+bp <- GetPercentile(psq, b, tmax);
+
+gdf <- data.frame(RT =c(xp,yp,zp,bp), Probability =rep(psq, 4),
+                  Condition =rep(c("Soft", "Dim","Soft+Dim","Bounding sum"), each=length(xp)))
+panelf <- ggplot(gdf, aes(x = RT, y = Probability, group=Condition,
+                          colour=Condition, shape=Condition)) + 
+  geom_point() + geom_line() 
+panelf + coord_cartesian(xlim = c(10, 20), ylim=c(-.01,1.01)) +
+  theme(legend.position= c(.85, .20),  
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=12))
+zp <- GetPercentile(psq, gz, tmax);
+bp <- GetPercentile(psq, b, tmax);
